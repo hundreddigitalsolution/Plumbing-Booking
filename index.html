@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plumbing Pros - Book Installation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .time-slots {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .time-slot {
+            padding: 12px;
+            text-align: center;
+            background: #eaf2f8;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .time-slot.selected {
+            background: #3498db;
+            color: white;
+        }
+        .time-slot.booked {
+            background: #ffdddd;
+            cursor: not-allowed;
+        }
+        #confirmation {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #e8f8f5;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Book Your Plumbing Installation</h1>
+        
+        <div id="booking-form">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="phone" required>
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <input type="text" id="address" required>
+            </div>
+            <div class="form-group">
+                <label>Postal Code</label>
+                <input type="text" id="postalCode" required>
+            </div>
+            <div class="form-group">
+                <label>Installation Date</label>
+                <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+                <label>Time Slot</label>
+                <div class="time-slots" id="time-slots">
+                    <div class="time-slot" data-time="9:00 AM">9:00 AM</div>
+                    <div class="time-slot" data-time="1:00 PM">1:00 PM</div>
+                    <div class="time-slot" data-time="4:00 PM">4:00 PM</div>
+                    <div class="time-slot" data-time="7:00 PM">7:00 PM</div>
+                </div>
+            </div>
+            <button id="submit-btn">Book Now</button>
+        </div>
+        
+        <div id="confirmation">
+            <h2>✅ Booking Confirmed!</h2>
+            <p id="booking-details"></p>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwJiU6EzI6OoDG2V9vqW4szpTfmba-cyPcptO3-wsx5S3Aej5QS22oO2Zp3--FB8-_0/exec"; 
+        
+        document.getElementById('date').min = new Date(new Date().getTime() + 86400000).toISOString().split('T')[0];
+        
+        let selectedTime = null;
+        
+        // Time slot selection
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            slot.addEventListener('click', () => {
+                document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+                slot.classList.add('selected');
+                selectedTime = slot.getAttribute('data-time');
+            });
+        });
+        
+        // Form submission
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            const date = document.getElementById('date').value;
+            const day = new Date(date).getDay();
+            
+            // Check if Sunday
+            if (day === 0) {
+                alert("We're closed on Sundays. Please choose another day.");
+                return;
+            }
+            
+            if (!selectedTime) {
+                alert("Please select a time slot.");
+                return;
+            }
+            
+            const bookingData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                postalCode: document.getElementById('postalCode').value,
+                date: date,
+                time: selectedTime
+            };
+            
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(bookingData)
+                });
+                const result = await response.json();
+                
+                if (result.status === "success") {
+                    document.getElementById('booking-form').style.display = 'none';
+                    document.getElementById('confirmation').style.display = 'block';
+                    document.getElementById('booking-details').innerHTML = `
+                        <strong>Date:</strong> ${result.booking.date}<br>
+                        <strong>Time:</strong> ${result.booking.time}
+                    `;
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert("Error submitting booking. Please try again.");
+            }
+        });
+    </script>
+</body>
+</html>
